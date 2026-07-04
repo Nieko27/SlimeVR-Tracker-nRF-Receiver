@@ -1,0 +1,9 @@
+# Copyright (c) 2026 Primis
+# SPDX-License-Identifier: Apache-2.0
+
+board:
+  name: versipellis_ev2
+  full_name: Versipellis EV2
+  vendor: primis
+  socs:
+    - name: nrf52833

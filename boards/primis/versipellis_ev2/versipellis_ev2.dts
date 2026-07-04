@@ -1,0 +1,98 @@
+// Copyright (c) 2026 Primis
+// SPDX-License-Identifier: Apache-2.0
+
+/dts-v1/;
+#include <nordic/nrf52833_qdaa.dtsi>
+#include <zephyr/dt-bindings/led/led.h>
+
+&pinctrl {
+	/* WS2812B-2020 data on P0.30, driven by SPIM MOSI.
+	 * SCK is required by the SPIM peripheral but unused on the
+	 * board, so it is sacrificed to the unconnected P0.17 pad.
+	 * MISO is not needed and left unassigned. */
+	spi1_default: spi1_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_MOSI, 0, 30)>,
+				<NRF_PSEL(SPIM_SCK, 0, 17)>;
+		};
+	};
+
+	spi1_sleep: spi1_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_MOSI, 0, 30)>,
+				<NRF_PSEL(SPIM_SCK, 0, 17)>;
+			low-power-enable;
+		};
+	};
+};
+
+/ {
+	model = "Versipellis EV2";
+	compatible = "primis,versipellis-ev2";
+
+	aliases {
+		led-strip = &led_strip;
+	};
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,console = &cdc_acm_uart0;
+		zephyr,shell-uart = &cdc_acm_uart0;
+	};
+};
+
+/* USB VBUS feeds VDDH: high-voltage mode, REG0 active.
+ * board.c programs UICR REGOUT0 to 3.3 V on first boot. */
+&reg0 {
+	status = "okay";
+};
+
+/* P0.18 is wired to the Tag-Connect footprint as nRESET (10k pull-up) */
+&uicr {
+	gpio-as-nreset;
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&spi1 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	pinctrl-0 = <&spi1_default>;
+	pinctrl-1 = <&spi1_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	led_strip: ws2812@0 {
+		compatible = "worldsemi,ws2812-spi";
+		reg = <0>;
+		spi-max-frequency = <4000000>;
+		chain-length = <1>;
+		spi-one-frame = <0x70>;
+		spi-zero-frame = <0x40>;
+		color-mapping = <LED_COLOR_ID_GREEN
+				 LED_COLOR_ID_RED
+				 LED_COLOR_ID_BLUE>;
+	};
+};
+
+zephyr_udc0: &usbd {
+	compatible = "nordic,nrf-usbd";
+	status = "okay";
+	cdc_acm_uart0: cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
+
+&nfct {
+	status = "disabled";
+};
